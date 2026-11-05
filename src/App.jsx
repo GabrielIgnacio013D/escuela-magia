@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
+import { supabase } from './supabase'
+import AuthModal from './AuthModal'
 
 const NOMBRE = 'Magia Club'
 const WA_GABO = '56940533981'
@@ -73,19 +75,39 @@ function useTema() {
   return [tema, cambiar]
 }
 
-function Navbar({ tema, cambiarTema }) {
+function Navbar({ tema, cambiarTema, usuario, onIngresar, onSalir }) {
+  const nombre = usuario?.user_metadata?.nombre || usuario?.email
+
   return (
     <nav className="fixed top-0 inset-x-0 z-50 backdrop-blur bg-bg/80 border-b border-line">
       <div className="mx-auto max-w-6xl flex items-center justify-between px-5 py-4">
         <a href="#inicio" className="font-display text-brand text-lg font-bold tracking-wide">
           ✦ {NOMBRE}
         </a>
-        <div className="flex items-center gap-5">
-          <div className="hidden sm:flex gap-6 text-sm text-muted">
+        <div className="flex items-center gap-4">
+          <div className="hidden md:flex gap-6 text-sm text-muted">
             <a href="#cursos" className="hover:text-brand">Cursos</a>
             <a href="#como" className="hover:text-brand">Cómo funciona</a>
             <a href="#contacto" className="hover:text-brand">Contacto</a>
           </div>
+          {usuario ? (
+            <>
+              <span className="hidden sm:inline text-sm text-muted">Hola, {nombre}</span>
+              <button
+                onClick={onSalir}
+                className="rounded-full border border-line text-sm px-4 py-2 hover:bg-brand-soft transition"
+              >
+                Salir
+              </button>
+            </>
+          ) : (
+            <button
+              onClick={onIngresar}
+              className="rounded-full bg-accent text-on-accent text-sm font-semibold px-5 py-2 hover:scale-105 transition"
+            >
+              Ingresar
+            </button>
+          )}
           <button
             onClick={cambiarTema}
             aria-label="Cambiar entre tema claro y oscuro"
@@ -98,7 +120,6 @@ function Navbar({ tema, cambiarTema }) {
     </nav>
   )
 }
-
 function Hero() {
   return (
     <section
@@ -241,9 +262,29 @@ function Contacto() {
 
 export default function App() {
   const [tema, cambiarTema] = useTema()
+  const [usuario, setUsuario] = useState(null)
+  const [modal, setModal] = useState(null)
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => setUsuario(data.session?.user ?? null))
+
+    const { data: sub } = supabase.auth.onAuthStateChange((evento, sesion) => {
+      setUsuario(sesion?.user ?? null)
+      if (evento === 'PASSWORD_RECOVERY') setModal('nueva')
+    })
+
+    return () => sub.subscription.unsubscribe()
+  }, [])
+
   return (
     <>
-      <Navbar tema={tema} cambiarTema={cambiarTema} />
+      <Navbar
+        tema={tema}
+        cambiarTema={cambiarTema}
+        usuario={usuario}
+        onIngresar={() => setModal('login')}
+        onSalir={() => supabase.auth.signOut()}
+      />
       <Hero />
       <Cursos />
       <Como />
@@ -251,6 +292,7 @@ export default function App() {
       <footer className="border-t border-line py-8 text-center text-xs text-muted">
         © {new Date().getFullYear()} {NOMBRE}. Todos los derechos reservados.
       </footer>
+      {modal && <AuthModal modoInicial={modal} onClose={() => setModal(null)} />}
     </>
   )
 }
