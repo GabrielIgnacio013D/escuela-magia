@@ -1,18 +1,52 @@
 @import "tailwindcss";
 
-@theme {
+:root {
+  --bg: #ffffff;
+  --surface: #f3f6fc;
+  --card: #ffffff;
+  --ink: #0f1f3d;
+  --muted: #55627d;
+  --line: #dbe3f1;
+  --brand: #1e3a8a;
+  --brand-soft: #e6edfb;
+  --accent: #2563eb;
+  --on-accent: #ffffff;
+}
+
+[data-theme="dark"] {
+  --bg: #0a1224;
+  --surface: #0f1a33;
+  --card: #132042;
+  --ink: #eaf0ff;
+  --muted: #9fb0d3;
+  --line: #22335c;
+  --brand: #8ab4ff;
+  --brand-soft: #16264a;
+  --accent: #5b9dff;
+  --on-accent: #08122a;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-card: var(--card);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-brand: var(--brand);
+  --color-brand-soft: var(--brand-soft);
+  --color-accent: var(--accent);
+  --color-on-accent: var(--on-accent);
   --font-display: "Cinzel", serif;
   --font-sans: "Inter", sans-serif;
-  --color-gold: #e6c36a;
-  --color-night: #0b0618;
-  --color-violet-deep: #1a0f3a;
 }
 
 html { scroll-behavior: smooth; }
 
 body {
-  background: var(--color-night);
-  color: #f5f0ff;
-  font-family: var(--font-sans);
   margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  transition: background 0.3s, color 0.3s;
 }
