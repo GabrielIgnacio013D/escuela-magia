@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import { supabase } from './supabase'
 import AuthModal from './AuthModal'
+import MisCursos from './MisCursos'
+import VideoModal from './VideoModal'
 
 const NOMBRE = 'Magia Club'
 const WA_GABO = '56940533981'
@@ -120,6 +122,7 @@ function Navbar({ tema, cambiarTema, usuario, onIngresar, onSalir }) {
     </nav>
   )
 }
+
 function Hero() {
   return (
     <section
@@ -157,6 +160,26 @@ function Hero() {
 }
 
 function Cursos() {
+  const [avances, setAvances] = useState({})
+  const [video, setVideo] = useState(null)
+  const ids = ['inicial', 'avanzada', 'escenica']
+
+  useEffect(() => {
+    supabase
+      .from('lecciones')
+      .select('curso, orden, titulo, youtube_id')
+      .eq('publica', true)
+      .order('orden', { ascending: true })
+      .then(({ data }) => {
+        const mapa = {}
+        const lista = data || []
+        lista.forEach((l) => {
+          if (!mapa[l.curso]) mapa[l.curso] = l
+        })
+        setAvances(mapa)
+      })
+  }, [])
+
   return (
     <section id="cursos" className="mx-auto max-w-6xl px-5 py-24">
       <motion.h2 {...aparecer} className="font-display text-3xl sm:text-4xl text-center font-bold">
@@ -180,6 +203,14 @@ function Cursos() {
             <h3 className="mt-4 font-display text-xl font-bold text-brand">{c.titulo}</h3>
             <span className="mt-1 text-xs uppercase tracking-wider text-muted">{c.nivel}</span>
             <p className="mt-3 text-muted text-sm flex-1">{c.desc}</p>
+            {avances[ids[i]] && (
+              <button
+                onClick={() => setVideo(avances[ids[i]])}
+                className="mt-4 text-left text-sm font-semibold text-accent hover:underline"
+              >
+                ▶ Ver avance del curso
+              </button>
+            )}
             <div className="mt-6 flex items-center justify-between">
               <span className="text-xl font-bold">{c.precio}</span>
               <a
@@ -194,6 +225,7 @@ function Cursos() {
           </motion.div>
         ))}
       </div>
+      {video && <VideoModal video={video} onClose={() => setVideo(null)} />}
     </section>
   )
 }
@@ -286,6 +318,7 @@ export default function App() {
         onSalir={() => supabase.auth.signOut()}
       />
       <Hero />
+      {usuario && <MisCursos />}
       <Cursos />
       <Como />
       <Contacto />
