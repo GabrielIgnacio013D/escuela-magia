@@ -10,12 +10,12 @@ function traducir(msg = '') {
   if (m.includes('rate limit') || m.includes('security purposes'))
     return 'Demasiados intentos. Espera un momento y vuelve a probar.'
   if (m.includes('not authorized'))
-    return 'Los correos de confirmación aún están en pruebas. Escríbenos por WhatsApp.'
+    return 'No pudimos enviar el correo de confirmación. Escríbenos por WhatsApp.'
   return 'Ocurrió un error. Intenta de nuevo.'
 }
 
 export default function AuthModal({ modoInicial = 'login', onClose }) {
-  const [modo, setModo] = useState(modoInicial)
+  const [modo, setModo] = useState(modoInicial) // login | registro | nueva
   const [nombre, setNombre] = useState('')
   const [email, setEmail] = useState('')
   const [clave, setClave] = useState('')
@@ -25,7 +25,6 @@ export default function AuthModal({ modoInicial = 'login', onClose }) {
   const titulos = {
     login: 'Ingresar',
     registro: 'Crear cuenta',
-    olvide: 'Recuperar contraseña',
     nueva: 'Nueva contraseña',
   }
 
@@ -59,15 +58,6 @@ export default function AuthModal({ modoInicial = 'login', onClose }) {
         const { error } = await supabase.auth.signInWithPassword({ email, password: clave })
         if (error) throw error
         onClose()
-      } else if (modo === 'olvide') {
-        const { error } = await supabase.auth.resetPasswordForEmail(email, {
-          redirectTo: window.location.origin,
-        })
-        if (error) throw error
-        setMensaje({
-          tipo: 'ok',
-          texto: 'Si el correo tiene cuenta, te enviamos un enlace para crear una nueva contraseña.',
-        })
       } else if (modo === 'nueva') {
         const { error } = await supabase.auth.updateUser({ password: clave })
         if (error) throw error
@@ -144,25 +134,23 @@ export default function AuthModal({ modoInicial = 'login', onClose }) {
             </div>
           )}
 
-          {modo !== 'olvide' && (
-            <div>
-              <label className="block text-sm text-muted mb-1">
-                {modo === 'nueva' ? 'Nueva contraseña' : 'Contraseña'}
-              </label>
-              <input
-                type="password"
-                className={campo}
-                value={clave}
-                onChange={(e) => setClave(e.target.value)}
-                required
-                minLength={modo === 'login' ? undefined : 8}
-                autoComplete={modo === 'login' ? 'current-password' : 'new-password'}
-              />
-              {modo !== 'login' && (
-                <p className="mt-1 text-xs text-muted">Mínimo 8 caracteres.</p>
-              )}
-            </div>
-          )}
+          <div>
+            <label className="block text-sm text-muted mb-1">
+              {modo === 'nueva' ? 'Nueva contraseña' : 'Contraseña'}
+            </label>
+            <input
+              type="password"
+              className={campo}
+              value={clave}
+              onChange={(e) => setClave(e.target.value)}
+              required
+              minLength={modo === 'login' ? undefined : 8}
+              autoComplete={modo === 'login' ? 'current-password' : 'new-password'}
+            />
+            {modo !== 'login' && (
+              <p className="mt-1 text-xs text-muted">Mínimo 8 caracteres.</p>
+            )}
+          </div>
 
           {mensaje && (
             <p
@@ -185,29 +173,14 @@ export default function AuthModal({ modoInicial = 'login', onClose }) {
               ? 'Ingresar'
               : modo === 'registro'
               ? 'Crear mi cuenta'
-              : modo === 'olvide'
-              ? 'Enviar enlace'
               : 'Guardar contraseña'}
           </button>
         </form>
 
         {modo === 'login' && (
-          <button
-            type="button"
-            onClick={() => cambiarModo('olvide')}
-            className="mt-4 w-full text-center text-sm text-accent hover:underline"
-          >
-            ¿Olvidaste tu contraseña?
-          </button>
-        )}
-        {modo === 'olvide' && (
-          <button
-            type="button"
-            onClick={() => cambiarModo('login')}
-            className="mt-4 w-full text-center text-sm text-accent hover:underline"
-          >
-            Volver a ingresar
-          </button>
+          <p className="mt-4 text-center text-sm text-muted">
+            ¿Olvidaste tu contraseña? Escríbenos por WhatsApp y te ayudamos.
+          </p>
         )}
       </div>
     </div>
