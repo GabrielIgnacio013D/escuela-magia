@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { supabase } from './supabase'
+import Prueba from './Prueba'
 
 const WA_GABO = '56940533981'
 
@@ -101,6 +102,8 @@ function Curso({ curso, lecciones }) {
           </ul>
         </div>
       )}
+
+      {!bloqueado && lecciones.length > 0 && <Prueba curso={curso} />}
     </div>
   )
 }
