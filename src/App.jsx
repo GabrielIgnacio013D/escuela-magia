@@ -5,6 +5,7 @@ import AuthModal from './AuthModal'
 import MisCursos from './MisCursos'
 import VideoModal from './VideoModal'
 import Admin from './Admin'
+import AdminEntregas from './AdminEntregas'
 
 const NOMBRE = 'Magia Club'
 const WA_GABO = '56940533981'
@@ -78,7 +79,7 @@ function useTema() {
   return [tema, cambiar]
 }
 
-function Navbar({ tema, cambiarTema, usuario, onIngresar, onSalir }) {
+function Navbar({ tema, cambiarTema, usuario, esAdmin, onIngresar, onSalir }) {
   const nombre = usuario?.user_metadata?.nombre || usuario?.email
 
   return (
@@ -87,12 +88,18 @@ function Navbar({ tema, cambiarTema, usuario, onIngresar, onSalir }) {
         <a href="#inicio" className="font-display text-brand text-lg font-bold tracking-wide">
           ✦ {NOMBRE}
         </a>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3 sm:gap-4">
           <div className="hidden md:flex gap-6 text-sm text-muted">
             <a href="#cursos" className="hover:text-brand">Cursos</a>
             <a href="#como" className="hover:text-brand">Cómo funciona</a>
             <a href="#contacto" className="hover:text-brand">Contacto</a>
           </div>
+          {esAdmin && (
+            <div className="flex gap-3 text-xs sm:text-sm font-semibold text-accent">
+              <a href="#entregas" className="hover:underline">Videos</a>
+              <a href="#admin" className="hover:underline">Alumnos</a>
+            </div>
+          )}
           {usuario ? (
             <>
               <span className="hidden sm:inline text-sm text-muted">Hola, {nombre}</span>
@@ -238,9 +245,6 @@ function Como() {
         <motion.h2 {...aparecer} className="font-display text-3xl sm:text-4xl text-center font-bold">
           Así aprendes
         </motion.h2>
-        <p className="mt-3 text-center text-muted text-sm">
-          Estamos terminando tu cuenta personal, las pruebas y la subida de videos. ¡Muy pronto!
-        </p>
         <div className="mt-12 grid grid-cols-2 lg:grid-cols-4 gap-5">
           {pasos.map((p, i) => (
             <motion.div
@@ -331,11 +335,17 @@ export default function App() {
         tema={tema}
         cambiarTema={cambiarTema}
         usuario={usuario}
+        esAdmin={esAdmin}
         onIngresar={() => setModal('login')}
         onSalir={() => supabase.auth.signOut()}
       />
       <Hero />
-      {esAdmin && <Admin />}
+      {esAdmin && (
+        <>
+          <AdminEntregas />
+          <Admin />
+        </>
+      )}
       {usuario && <MisCursos />}
       <Cursos />
       <Como />
