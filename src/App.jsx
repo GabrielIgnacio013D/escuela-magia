@@ -4,6 +4,7 @@ import { supabase } from './supabase'
 import AuthModal from './AuthModal'
 import MisCursos from './MisCursos'
 import VideoModal from './VideoModal'
+import Admin from './Admin'
 
 const NOMBRE = 'Magia Club'
 const WA_GABO = '56940533981'
@@ -295,6 +296,7 @@ function Contacto() {
 export default function App() {
   const [tema, cambiarTema] = useTema()
   const [usuario, setUsuario] = useState(null)
+  const [esAdmin, setEsAdmin] = useState(false)
   const [modal, setModal] = useState(null)
 
   useEffect(() => {
@@ -308,6 +310,21 @@ export default function App() {
     return () => sub.subscription.unsubscribe()
   }, [])
 
+  const uid = usuario?.id
+
+  useEffect(() => {
+    if (!uid) {
+      setEsAdmin(false)
+      return
+    }
+    supabase
+      .from('perfiles')
+      .select('es_admin')
+      .eq('id', uid)
+      .maybeSingle()
+      .then(({ data }) => setEsAdmin(Boolean(data?.es_admin)))
+  }, [uid])
+
   return (
     <>
       <Navbar
@@ -318,6 +335,7 @@ export default function App() {
         onSalir={() => supabase.auth.signOut()}
       />
       <Hero />
+      {esAdmin && <Admin />}
       {usuario && <MisCursos />}
       <Cursos />
       <Como />
