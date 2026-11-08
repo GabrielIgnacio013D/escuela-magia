@@ -3,9 +3,12 @@ import { motion } from 'framer-motion'
 import { supabase } from './supabase'
 import AuthModal from './AuthModal'
 import PaginaCurso from './PaginaCurso'
+import Privacidad from './Privacidad'
 import VideoModal from './VideoModal'
 import Admin from './Admin'
 import AdminEntregas from './AdminEntregas'
+import AdminNotas from './AdminNotas'
+import { QuienesSomos, Faq } from './Secciones'
 import { NOMBRE, WA_GABO, WA_XINO, wa, CURSOS } from './datos'
 
 const pasos = [
@@ -54,9 +57,10 @@ function useRuta() {
   const m = hash.match(/^#\/curso\/([a-z]+)(\/lecciones)?/)
   const cursoId = m && CURSOS.some((c) => c.id === m[1]) ? m[1] : null
   const vista = m && m[2] ? 'lecciones' : 'presentacion'
+  const esPrivacidad = hash === '#/privacidad'
 
   useEffect(() => {
-    if (cursoId) {
+    if (cursoId || esPrivacidad) {
       window.scrollTo(0, 0)
       return
     }
@@ -64,12 +68,22 @@ function useRuta() {
     if (!id || id.startsWith('/')) return
     const t = setTimeout(() => document.getElementById(id)?.scrollIntoView(), 60)
     return () => clearTimeout(t)
-  }, [cursoId, vista, hash])
+  }, [cursoId, vista, esPrivacidad, hash])
 
-  return { cursoId, vista }
+  return { cursoId, vista, esPrivacidad }
 }
 
-function Navbar({ tema, cambiarTema, usuario, esAdmin, cursoId, onIngresar, onSalir }) {
+function Navbar({
+  tema,
+  cambiarTema,
+  usuario,
+  esAdmin,
+  pendientes,
+  cursoId,
+  inicioActivo,
+  onIngresar,
+  onSalir,
+}) {
   const nombre = usuario?.user_metadata?.nombre || usuario?.email
 
   const tab = (activa) =>
@@ -86,7 +100,15 @@ function Navbar({ tema, cambiarTema, usuario, esAdmin, cursoId, onIngresar, onSa
         <div className="flex items-center gap-3 sm:gap-4">
           {esAdmin && (
             <div className="flex gap-3 text-xs font-semibold text-accent sm:text-sm">
-              <a href="#entregas" className="hover:underline">Videos</a>
+              <a href="#entregas" className="flex items-center hover:underline">
+                Videos
+                {pendientes > 0 && (
+                  <span className="ml-1 rounded-full bg-red-500 px-1.5 py-0.5 text-[10px] font-bold leading-none text-white">
+                    {pendientes}
+                  </span>
+                )}
+              </a>
+              <a href="#notas" className="hover:underline">Notas</a>
               <a href="#admin" className="hover:underline">Alumnos</a>
             </div>
           )}
@@ -119,7 +141,7 @@ function Navbar({ tema, cambiarTema, usuario, esAdmin, cursoId, onIngresar, onSa
       </div>
 
       <div className="mx-auto flex max-w-6xl gap-2 overflow-x-auto px-5 pb-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-        <a href="#inicio" className={tab(!cursoId)}>
+        <a href="#inicio" className={tab(inicioActivo)}>
           Inicio
         </a>
         {CURSOS.map((c) => (
@@ -127,6 +149,12 @@ function Navbar({ tema, cambiarTema, usuario, esAdmin, cursoId, onIngresar, onSa
             {c.icono} {c.corto}
           </a>
         ))}
+        <a href="#quienes" className={tab(false)}>
+          Nosotros
+        </a>
+        <a href="#faq" className={tab(false)}>
+          Preguntas
+        </a>
         <a href="#contacto" className={tab(false)}>
           Contacto
         </a>
@@ -300,9 +328,10 @@ function Contacto() {
 
 export default function App() {
   const [tema, cambiarTema] = useTema()
-  const { cursoId, vista } = useRuta()
+  const { cursoId, vista, esPrivacidad } = useRuta()
   const [usuario, setUsuario] = useState(null)
   const [esAdmin, setEsAdmin] = useState(false)
+  const [pendientes, setPendientes] = useState(0)
   const [modal, setModal] = useState(null)
 
   useEffect(() => {
@@ -331,6 +360,34 @@ export default function App() {
       .then(({ data }) => setEsAdmin(Boolean(data?.es_admin)))
   }, [uid])
 
+  useEffect(() => {
+    if (!esAdmin) {
+      setPendientes(0)
+      return
+    }
+    let vivo = true
+    async function contar() {
+      const { count } = await supabase
+        .from('entregas')
+        .select('id', { count: 'exact', head: true })
+        .is('corregido_en', null)
+      if (vivo) setPendientes(count ?? 0)
+    }
+    contar()
+    const cada60s = setInterval(contar, 60000)
+    return () => {
+      vivo = false
+      clearInterval(cada60s)
+    }
+  }, [esAdmin])
+
+  useEffect(() => {
+    document.title =
+      pendientes > 0
+        ? `(${pendientes}) ${NOMBRE}`
+        : `${NOMBRE} | Aprende magia desde cero`
+  }, [pendientes])
+
   return (
     <>
       <Navbar
@@ -338,12 +395,16 @@ export default function App() {
         cambiarTema={cambiarTema}
         usuario={usuario}
         esAdmin={esAdmin}
+        pendientes={pendientes}
         cursoId={cursoId}
+        inicioActivo={!cursoId && !esPrivacidad}
         onIngresar={() => setModal('login')}
         onSalir={() => supabase.auth.signOut()}
       />
 
-      {cursoId ? (
+      {esPrivacidad ? (
+        <Privacidad />
+      ) : cursoId ? (
         <PaginaCurso
           key={cursoId}
           cursoId={cursoId}
@@ -358,17 +419,27 @@ export default function App() {
           {esAdmin && (
             <>
               <AdminEntregas />
+              <AdminNotas />
               <Admin />
             </>
           )}
           <Cursos />
           <Como />
+          <QuienesSomos />
+          <Faq />
           <Contacto />
         </>
       )}
 
-      <footer className="border-t border-line py-8 text-center text-xs text-muted">
-        © {new Date().getFullYear()} {NOMBRE}. Todos los derechos reservados.
+      <footer className="border-t border-line px-5 py-8 text-center text-xs text-muted">
+        <p>
+          © {new Date().getFullYear()} {NOMBRE}. Todos los derechos reservados.
+        </p>
+        <p className="mt-2">
+          <a href="#/privacidad" className="underline hover:text-ink">
+            Política de privacidad
+          </a>
+        </p>
       </footer>
       {modal && <AuthModal modoInicial={modal} onClose={() => setModal(null)} />}
     </>

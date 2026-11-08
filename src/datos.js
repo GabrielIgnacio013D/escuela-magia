@@ -82,3 +82,55 @@ export const CURSOS = [
     mensaje: 'Hola! Quiero inscribirme en Magia Escénica y Mentalismo ($20.000)',
   },
 ]
+
+// Para poner una foto: guarda la imagen en la carpeta "public" (por ejemplo public/gabo.jpg)
+// y cambia foto: null por foto: '/gabo.jpg'
+export const FUNDADORES = [
+  {
+    nombre: 'Gabo',
+    rol: 'Fundador e instructor',
+    foto: null,
+    bio: 'Escribe aquí tu historia: cuándo empezaste con la magia, qué te apasiona y por qué quieres enseñarla.',
+  },
+  {
+    nombre: 'Xino',
+    rol: 'Fundador e instructor',
+    foto: null,
+    bio: 'Escribe aquí su historia: cómo se metió en la magia y qué le gusta enseñar.',
+  },
+]
+
+export const FAQ = [
+  {
+    p: '¿Necesito experiencia previa?',
+    r: 'No. El curso inicial parte desde cero y está pensado para quien nunca ha hecho magia.',
+  },
+  {
+    p: '¿Qué necesito para empezar?',
+    r: 'Una baraja de cartas común y un celular o computador para ver las clases.',
+  },
+  {
+    p: '¿Cuánto cuesta?',
+    r: `El curso inicial es ${CURSOS[0].precio.toLowerCase()}. ${CURSOS[1].titulo} cuesta ${CURSOS[1].precio} y ${CURSOS[2].titulo} cuesta ${CURSOS[2].precio}.`,
+  },
+  {
+    p: '¿Cómo pago y cuándo se abre mi acceso?',
+    r: 'Por ahora el pago se coordina por WhatsApp con Gabo o con el Xino. Cuando confirmamos el pago, abrimos tu acceso al curso.',
+  },
+  {
+    p: '¿Cómo funcionan las pruebas y las correcciones?',
+    r: 'Cada nivel tiene una prueba escrita con nota. Además puedes subir un video corto de tu práctica en la pestaña Tutoriales: nosotros lo revisamos y verás la corrección en tu cuenta.',
+  },
+  {
+    p: '¿Quién puede ver mis videos?',
+    r: 'Solo tú y los administradores de la escuela. Tus videos de práctica no se publican.',
+  },
+  {
+    p: '¿Puedo participar si soy menor de edad?',
+    r: 'Si tienes menos de 18 años, necesitas la autorización de tu madre, padre o tutor para crear tu cuenta.',
+  },
+  {
+    p: 'Olvidé mi contraseña, ¿qué hago?',
+    r: 'Escríbenos por WhatsApp y te ayudamos a recuperar tu cuenta.',
+  },
+]

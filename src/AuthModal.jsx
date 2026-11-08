@@ -19,6 +19,7 @@ export default function AuthModal({ modoInicial = 'login', onClose }) {
   const [nombre, setNombre] = useState('')
   const [email, setEmail] = useState('')
   const [clave, setClave] = useState('')
+  const [acepto, setAcepto] = useState(false)
   const [cargando, setCargando] = useState(false)
   const [mensaje, setMensaje] = useState(null)
 
@@ -89,12 +90,12 @@ export default function AuthModal({ modoInicial = 'login', onClose }) {
       onClick={onClose}
     >
       <div
-        className="w-full max-w-md rounded-2xl border border-line bg-card p-6 shadow-xl"
+        className="max-h-[92vh] w-full max-w-md overflow-y-auto rounded-2xl border border-line bg-card p-6 shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between">
           <h2 className="font-display text-2xl font-bold text-brand">{titulos[modo]}</h2>
-          <button onClick={onClose} aria-label="Cerrar" className="text-muted hover:text-ink text-xl">
+          <button onClick={onClose} aria-label="Cerrar" className="text-xl text-muted hover:text-ink">
             ✕
           </button>
         </div>
@@ -151,6 +152,25 @@ export default function AuthModal({ modoInicial = 'login', onClose }) {
               <p className="mt-1 text-xs text-muted">Mínimo 8 caracteres.</p>
             )}
           </div>
+
+          {modo === 'registro' && (
+            <label className="flex items-start gap-3 text-sm text-muted">
+              <input
+                type="checkbox"
+                checked={acepto}
+                onChange={(e) => setAcepto(e.target.checked)}
+                required
+                className="mt-1"
+              />
+              <span>
+                Acepto la{' '}
+                <a href="#/privacidad" onClick={onClose} className="text-accent underline">
+                  política de privacidad
+                </a>
+                . Si tengo menos de 18 años, cuento con la autorización de un adulto.
+              </span>
+            </label>
+          )}
 
           {mensaje && (
             <p

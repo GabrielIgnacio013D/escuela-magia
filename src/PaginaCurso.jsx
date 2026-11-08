@@ -96,6 +96,7 @@ export default function PaginaCurso({ cursoId, vista, usuario, onIngresar, onReg
   const curso = CURSOS.find((c) => c.id === cursoId)
   const [lecciones, setLecciones] = useState([])
   const [inscrito, setInscrito] = useState(false)
+  const [vistas, setVistas] = useState(new Set())
   const [estado, setEstado] = useState('cargando')
   const [activaId, setActivaId] = useState(null)
   const uid = usuario?.id ?? null
@@ -105,10 +106,11 @@ export default function PaginaCurso({ cursoId, vista, usuario, onIngresar, onReg
     setEstado('cargando')
     setLecciones([])
     setInscrito(false)
+    setVistas(new Set())
     setActivaId(null)
 
     async function cargar() {
-      const [l, i] = await Promise.all([
+      const [l, i, p] = await Promise.all([
         supabase
           .from('lecciones')
           .select('*')
@@ -116,6 +118,9 @@ export default function PaginaCurso({ cursoId, vista, usuario, onIngresar, onReg
           .order('orden', { ascending: true }),
         uid
           ? supabase.from('inscripciones').select('curso').eq('user_id', uid).eq('curso', cursoId)
+          : Promise.resolve({ data: [] }),
+        uid
+          ? supabase.from('progreso').select('leccion_id').eq('user_id', uid)
           : Promise.resolve({ data: [] }),
       ])
       if (!vivo) return
@@ -125,6 +130,7 @@ export default function PaginaCurso({ cursoId, vista, usuario, onIngresar, onReg
       }
       setLecciones(l.data)
       setInscrito((i.data || []).length > 0)
+      setVistas(new Set((p.data || []).map((x) => x.leccion_id)))
       setEstado('listo')
     }
 
@@ -134,6 +140,25 @@ export default function PaginaCurso({ cursoId, vista, usuario, onIngresar, onReg
     }
   }, [cursoId, uid])
 
+  async function alternarVista(leccion) {
+    if (!uid) return
+    const yaVista = vistas.has(leccion.id)
+    const siguiente = new Set(vistas)
+    if (yaVista) siguiente.delete(leccion.id)
+    else siguiente.add(leccion.id)
+    setVistas(siguiente)
+
+    const { error } = yaVista
+      ? await supabase
+          .from('progreso')
+          .delete()
+          .eq('user_id', uid)
+          .eq('leccion_id', leccion.id)
+      : await supabase.from('progreso').insert({ user_id: uid, leccion_id: leccion.id })
+
+    if (error) setVistas(vistas)
+  }
+
   if (!curso) return null
 
   const avance = lecciones.find((l) => l.publica)
@@ -141,11 +166,13 @@ export default function PaginaCurso({ cursoId, vista, usuario, onIngresar, onReg
   const tieneAcceso = curso.gratis ? Boolean(usuario) : inscrito || tutoriales.length > 0
   const activa = tutoriales.find((l) => l.id === activaId) || tutoriales[0]
 
+  const totalVistas = tutoriales.filter((l) => vistas.has(l.id)).length
+  const porcentaje =
+    tutoriales.length > 0 ? Math.round((100 * totalVistas) / tutoriales.length) : 0
+
   const subtab = (activo) =>
     `-mb-px border-b-2 px-4 py-3 text-sm font-semibold transition ${
-      activo
-        ? 'border-accent text-accent'
-        : 'border-transparent text-muted hover:text-ink'
+      activo ? 'border-accent text-accent' : 'border-transparent text-muted hover:text-ink'
     }`
 
   return (
@@ -247,6 +274,26 @@ export default function PaginaCurso({ cursoId, vista, usuario, onIngresar, onReg
                 </p>
               ) : (
                 <>
+                  <div className="mb-5">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="font-semibold text-ink">Tu progreso</span>
+                      <span className="text-muted">
+                        {totalVistas} de {tutoriales.length} lecciones · {porcentaje}%
+                      </span>
+                    </div>
+                    <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-surface">
+                      <div
+                        className="h-full rounded-full bg-accent transition-all"
+                        style={{ width: `${porcentaje}%` }}
+                      />
+                    </div>
+                    {porcentaje === 100 && (
+                      <p className="mt-2 text-sm font-semibold text-accent">
+                        🎉 ¡Completaste todas las lecciones! Ahora rinde la prueba del nivel.
+                      </p>
+                    )}
+                  </div>
+
                   <div className="grid gap-5 lg:grid-cols-[1fr_260px]">
                     <div>
                       <Reproductor leccion={activa} />
@@ -254,6 +301,16 @@ export default function PaginaCurso({ cursoId, vista, usuario, onIngresar, onReg
                       {activa.descripcion && (
                         <p className="mt-1 text-sm text-muted">{activa.descripcion}</p>
                       )}
+                      <button
+                        onClick={() => alternarVista(activa)}
+                        className={`mt-4 rounded-full px-5 py-2 text-sm font-semibold transition ${
+                          vistas.has(activa.id)
+                            ? 'bg-accent text-on-accent'
+                            : 'border border-accent text-accent hover:bg-brand-soft'
+                        }`}
+                      >
+                        {vistas.has(activa.id) ? '✓ Lección vista (desmarcar)' : 'Marcar como vista'}
+                      </button>
                     </div>
 
                     <ul className="space-y-2">
@@ -267,6 +324,7 @@ export default function PaginaCurso({ cursoId, vista, usuario, onIngresar, onReg
                                 : 'border-line text-muted hover:text-ink'
                             }`}
                           >
+                            {vistas.has(l.id) ? '✓ ' : ''}
                             {i + 1}. {l.titulo}
                           </button>
                         </li>
