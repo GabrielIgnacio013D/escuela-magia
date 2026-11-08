@@ -2,48 +2,11 @@ import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import { supabase } from './supabase'
 import AuthModal from './AuthModal'
-import MisCursos from './MisCursos'
+import PaginaCurso from './PaginaCurso'
 import VideoModal from './VideoModal'
 import Admin from './Admin'
 import AdminEntregas from './AdminEntregas'
-
-const NOMBRE = 'Magia Club'
-const WA_GABO = '56940533981'
-const WA_XINO = '56975457092'
-
-const wa = (numero, texto) =>
-  `https://wa.me/${numero}?text=${encodeURIComponent(texto)}`
-
-const cursos = [
-  {
-    icono: '🃏',
-    titulo: 'Cartomagia Inicial',
-    nivel: 'Principiante',
-    precio: 'Gratis',
-    gratis: true,
-    desc: 'Entra al mundo de la cartomagia sin tecnicismos: técnicas básicas y trucos en video que podrás lograr desde el primer día.',
-    cta: 'Empezar gratis',
-    mensaje: 'Hola! Quiero empezar el curso gratuito de Cartomagia Inicial',
-  },
-  {
-    icono: '♠️',
-    titulo: 'Cartomagia Avanzada',
-    nivel: 'Intermedio',
-    precio: '$4.500',
-    desc: 'Lleva tus técnicas al siguiente nivel con manipulaciones, controles y rutinas completas explicadas paso a paso.',
-    cta: 'Inscribirme',
-    mensaje: 'Hola! Quiero inscribirme en Cartomagia Avanzada ($4.500)',
-  },
-  {
-    icono: '🎩',
-    titulo: 'Magia Escénica y Mentalismo',
-    nivel: 'Avanzado',
-    precio: '$20.000',
-    desc: 'Presentación, psicología y efectos para escenario. Aprende a crear momentos que nadie olvida.',
-    cta: 'Inscribirme',
-    mensaje: 'Hola! Quiero inscribirme en Magia Escénica y Mentalismo ($20.000)',
-  },
-]
+import { NOMBRE, WA_GABO, WA_XINO, wa, CURSOS } from './datos'
 
 const pasos = [
   { icono: '🎬', titulo: 'Mira las clases', desc: 'Videos cortos con cada técnica explicada paso a paso.' },
@@ -79,33 +42,60 @@ function useTema() {
   return [tema, cambiar]
 }
 
-function Navbar({ tema, cambiarTema, usuario, esAdmin, onIngresar, onSalir }) {
+function useRuta() {
+  const [hash, setHash] = useState(() => window.location.hash)
+
+  useEffect(() => {
+    const alCambiar = () => setHash(window.location.hash)
+    window.addEventListener('hashchange', alCambiar)
+    return () => window.removeEventListener('hashchange', alCambiar)
+  }, [])
+
+  const m = hash.match(/^#\/curso\/([a-z]+)(\/lecciones)?/)
+  const cursoId = m && CURSOS.some((c) => c.id === m[1]) ? m[1] : null
+  const vista = m && m[2] ? 'lecciones' : 'presentacion'
+
+  useEffect(() => {
+    if (cursoId) {
+      window.scrollTo(0, 0)
+      return
+    }
+    const id = hash.replace('#', '')
+    if (!id || id.startsWith('/')) return
+    const t = setTimeout(() => document.getElementById(id)?.scrollIntoView(), 60)
+    return () => clearTimeout(t)
+  }, [cursoId, vista, hash])
+
+  return { cursoId, vista }
+}
+
+function Navbar({ tema, cambiarTema, usuario, esAdmin, cursoId, onIngresar, onSalir }) {
   const nombre = usuario?.user_metadata?.nombre || usuario?.email
 
+  const tab = (activa) =>
+    `shrink-0 rounded-full px-4 py-2 text-sm font-semibold transition ${
+      activa ? 'bg-accent text-on-accent' : 'text-muted hover:bg-brand-soft hover:text-ink'
+    }`
+
   return (
-    <nav className="fixed top-0 inset-x-0 z-50 backdrop-blur bg-bg/80 border-b border-line">
-      <div className="mx-auto max-w-6xl flex items-center justify-between px-5 py-4">
-        <a href="#inicio" className="font-display text-brand text-lg font-bold tracking-wide">
+    <nav className="fixed inset-x-0 top-0 z-50 border-b border-line bg-bg/80 backdrop-blur">
+      <div className="mx-auto flex max-w-6xl items-center justify-between px-5 pb-2 pt-3">
+        <a href="#inicio" className="font-display text-lg font-bold tracking-wide text-brand">
           ✦ {NOMBRE}
         </a>
         <div className="flex items-center gap-3 sm:gap-4">
-          <div className="hidden md:flex gap-6 text-sm text-muted">
-            <a href="#cursos" className="hover:text-brand">Cursos</a>
-            <a href="#como" className="hover:text-brand">Cómo funciona</a>
-            <a href="#contacto" className="hover:text-brand">Contacto</a>
-          </div>
           {esAdmin && (
-            <div className="flex gap-3 text-xs sm:text-sm font-semibold text-accent">
+            <div className="flex gap-3 text-xs font-semibold text-accent sm:text-sm">
               <a href="#entregas" className="hover:underline">Videos</a>
               <a href="#admin" className="hover:underline">Alumnos</a>
             </div>
           )}
           {usuario ? (
             <>
-              <span className="hidden sm:inline text-sm text-muted">Hola, {nombre}</span>
+              <span className="hidden text-sm text-muted sm:inline">Hola, {nombre}</span>
               <button
                 onClick={onSalir}
-                className="rounded-full border border-line text-sm px-4 py-2 hover:bg-brand-soft transition"
+                className="rounded-full border border-line px-4 py-2 text-sm transition hover:bg-brand-soft"
               >
                 Salir
               </button>
@@ -113,7 +103,7 @@ function Navbar({ tema, cambiarTema, usuario, esAdmin, onIngresar, onSalir }) {
           ) : (
             <button
               onClick={onIngresar}
-              className="rounded-full bg-accent text-on-accent text-sm font-semibold px-5 py-2 hover:scale-105 transition"
+              className="rounded-full bg-accent px-5 py-2 text-sm font-semibold text-on-accent transition hover:scale-105"
             >
               Ingresar
             </button>
@@ -121,11 +111,25 @@ function Navbar({ tema, cambiarTema, usuario, esAdmin, onIngresar, onSalir }) {
           <button
             onClick={cambiarTema}
             aria-label="Cambiar entre tema claro y oscuro"
-            className="rounded-full border border-line bg-card w-10 h-10 flex items-center justify-center hover:scale-105 transition"
+            className="flex h-10 w-10 items-center justify-center rounded-full border border-line bg-card transition hover:scale-105"
           >
             {tema === 'dark' ? '☀️' : '🌙'}
           </button>
         </div>
+      </div>
+
+      <div className="mx-auto flex max-w-6xl gap-2 overflow-x-auto px-5 pb-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <a href="#inicio" className={tab(!cursoId)}>
+          Inicio
+        </a>
+        {CURSOS.map((c) => (
+          <a key={c.id} href={`#/curso/${c.id}`} className={tab(cursoId === c.id)}>
+            {c.icono} {c.corto}
+          </a>
+        ))}
+        <a href="#contacto" className={tab(false)}>
+          Contacto
+        </a>
       </div>
     </nav>
   )
@@ -135,29 +139,29 @@ function Hero() {
   return (
     <section
       id="inicio"
-      className="min-h-screen flex items-center justify-center text-center px-5 bg-[radial-gradient(ellipse_at_top,var(--brand-soft),var(--bg)_70%)]"
+      className="flex min-h-screen items-center justify-center bg-[radial-gradient(ellipse_at_top,var(--brand-soft),var(--bg)_70%)] px-5 text-center"
     >
-      <motion.div {...aparecer} className="max-w-3xl pt-20">
-        <p className="text-accent tracking-[0.3em] text-xs uppercase mb-4 font-semibold">
+      <motion.div {...aparecer} className="max-w-3xl pt-24">
+        <p className="mb-4 text-xs font-semibold uppercase tracking-[0.3em] text-accent">
           Aprende. Sorprende. Fascina.
         </p>
-        <h1 className="font-display text-4xl sm:text-6xl font-bold leading-tight text-ink">
+        <h1 className="font-display text-4xl font-bold leading-tight text-ink sm:text-6xl">
           Aprende magia <span className="text-accent">desde cero</span>
         </h1>
-        <p className="mt-6 text-muted text-lg">
+        <p className="mt-6 text-lg text-muted">
           Empieza gratis con cartomagia y avanza hasta la magia escénica y el mentalismo, con
           videos, pruebas y correcciones personalizadas.
         </p>
-        <div className="mt-10 flex flex-col sm:flex-row gap-4 justify-center">
+        <div className="mt-10 flex flex-col justify-center gap-4 sm:flex-row">
           <a
             href="#cursos"
-            className="rounded-full bg-accent text-on-accent font-semibold px-8 py-3 hover:scale-105 transition"
+            className="rounded-full bg-accent px-8 py-3 font-semibold text-on-accent transition hover:scale-105"
           >
             Ver los cursos
           </a>
           <a
             href="#como"
-            className="rounded-full border border-accent text-accent px-8 py-3 hover:bg-brand-soft transition"
+            className="rounded-full border border-accent px-8 py-3 text-accent transition hover:bg-brand-soft"
           >
             ¿Cómo funciona?
           </a>
@@ -170,7 +174,6 @@ function Hero() {
 function Cursos() {
   const [avances, setAvances] = useState({})
   const [video, setVideo] = useState(null)
-  const ids = ['inicial', 'avanzada', 'escenica']
 
   useEffect(() => {
     supabase
@@ -190,30 +193,30 @@ function Cursos() {
 
   return (
     <section id="cursos" className="mx-auto max-w-6xl px-5 py-24">
-      <motion.h2 {...aparecer} className="font-display text-3xl sm:text-4xl text-center font-bold">
+      <motion.h2 {...aparecer} className="text-center font-display text-3xl font-bold sm:text-4xl">
         Tres niveles, un solo camino
       </motion.h2>
       <div className="mt-12 grid gap-6 md:grid-cols-3">
-        {cursos.map((c, i) => (
+        {CURSOS.map((c, i) => (
           <motion.div
-            key={c.titulo}
+            key={c.id}
             {...aparecer}
             transition={{ duration: 0.6, delay: i * 0.1 }}
             whileHover={{ y: -6 }}
-            className="relative rounded-2xl border border-line bg-card p-6 flex flex-col shadow-sm"
+            className="relative flex flex-col rounded-2xl border border-line bg-card p-6 shadow-sm"
           >
             {c.gratis && (
-              <span className="absolute -top-3 right-5 rounded-full bg-accent text-on-accent text-xs font-semibold px-3 py-1">
+              <span className="absolute -top-3 right-5 rounded-full bg-accent px-3 py-1 text-xs font-semibold text-on-accent">
                 Gratis
               </span>
             )}
             <div className="text-5xl">{c.icono}</div>
             <h3 className="mt-4 font-display text-xl font-bold text-brand">{c.titulo}</h3>
             <span className="mt-1 text-xs uppercase tracking-wider text-muted">{c.nivel}</span>
-            <p className="mt-3 text-muted text-sm flex-1">{c.desc}</p>
-            {avances[ids[i]] && (
+            <p className="mt-3 flex-1 text-sm text-muted">{c.desc}</p>
+            {avances[c.id] && (
               <button
-                onClick={() => setVideo(avances[ids[i]])}
+                onClick={() => setVideo(avances[c.id])}
                 className="mt-4 text-left text-sm font-semibold text-accent hover:underline"
               >
                 ▶ Ver avance del curso
@@ -222,12 +225,10 @@ function Cursos() {
             <div className="mt-6 flex items-center justify-between">
               <span className="text-xl font-bold">{c.precio}</span>
               <a
-                href={wa(WA_GABO, c.mensaje)}
-                target="_blank"
-                rel="noreferrer"
-                className="rounded-full bg-accent text-on-accent text-sm font-semibold px-5 py-2 hover:scale-105 transition"
+                href={`#/curso/${c.id}`}
+                className="rounded-full bg-accent px-5 py-2 text-sm font-semibold text-on-accent transition hover:scale-105"
               >
-                {c.cta}
+                Ver curso →
               </a>
             </div>
           </motion.div>
@@ -240,12 +241,12 @@ function Cursos() {
 
 function Como() {
   return (
-    <section id="como" className="bg-surface py-24 px-5">
+    <section id="como" className="bg-surface px-5 py-24">
       <div className="mx-auto max-w-6xl">
-        <motion.h2 {...aparecer} className="font-display text-3xl sm:text-4xl text-center font-bold">
+        <motion.h2 {...aparecer} className="text-center font-display text-3xl font-bold sm:text-4xl">
           Así aprendes
         </motion.h2>
-        <div className="mt-12 grid grid-cols-2 lg:grid-cols-4 gap-5">
+        <div className="mt-12 grid grid-cols-2 gap-5 lg:grid-cols-4">
           {pasos.map((p, i) => (
             <motion.div
               key={p.titulo}
@@ -270,16 +271,16 @@ function Contacto() {
   return (
     <section id="contacto" className="mx-auto max-w-2xl px-5 py-24 text-center">
       <motion.div {...aparecer}>
-        <h2 className="font-display text-3xl sm:text-4xl font-bold">¿Tienes dudas?</h2>
+        <h2 className="font-display text-3xl font-bold sm:text-4xl">¿Tienes dudas?</h2>
         <p className="mt-4 text-muted">
           Escríbenos por WhatsApp y te ayudamos a elegir tu primer curso.
         </p>
-        <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center">
+        <div className="mt-8 flex flex-col justify-center gap-4 sm:flex-row">
           <a
             href={wa(WA_GABO, 'Hola Gabo! Tengo una consulta sobre la escuela de magia')}
             target="_blank"
             rel="noreferrer"
-            className="rounded-full bg-accent text-on-accent font-semibold px-8 py-3 hover:scale-105 transition"
+            className="rounded-full bg-accent px-8 py-3 font-semibold text-on-accent transition hover:scale-105"
           >
             Escribir a Gabo
           </a>
@@ -287,7 +288,7 @@ function Contacto() {
             href={wa(WA_XINO, 'Hola Xino! Tengo una consulta sobre la escuela de magia')}
             target="_blank"
             rel="noreferrer"
-            className="rounded-full border border-accent text-accent font-semibold px-8 py-3 hover:bg-brand-soft transition"
+            className="rounded-full border border-accent px-8 py-3 font-semibold text-accent transition hover:bg-brand-soft"
           >
             Escribir al Xino
           </a>
@@ -299,6 +300,7 @@ function Contacto() {
 
 export default function App() {
   const [tema, cambiarTema] = useTema()
+  const { cursoId, vista } = useRuta()
   const [usuario, setUsuario] = useState(null)
   const [esAdmin, setEsAdmin] = useState(false)
   const [modal, setModal] = useState(null)
@@ -336,20 +338,35 @@ export default function App() {
         cambiarTema={cambiarTema}
         usuario={usuario}
         esAdmin={esAdmin}
+        cursoId={cursoId}
         onIngresar={() => setModal('login')}
         onSalir={() => supabase.auth.signOut()}
       />
-      <Hero />
-      {esAdmin && (
+
+      {cursoId ? (
+        <PaginaCurso
+          key={cursoId}
+          cursoId={cursoId}
+          vista={vista}
+          usuario={usuario}
+          onIngresar={() => setModal('login')}
+          onRegistro={() => setModal('registro')}
+        />
+      ) : (
         <>
-          <AdminEntregas />
-          <Admin />
+          <Hero />
+          {esAdmin && (
+            <>
+              <AdminEntregas />
+              <Admin />
+            </>
+          )}
+          <Cursos />
+          <Como />
+          <Contacto />
         </>
       )}
-      {usuario && <MisCursos />}
-      <Cursos />
-      <Como />
-      <Contacto />
+
       <footer className="border-t border-line py-8 text-center text-xs text-muted">
         © {new Date().getFullYear()} {NOMBRE}. Todos los derechos reservados.
       </footer>
