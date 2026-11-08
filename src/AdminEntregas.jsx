@@ -35,13 +35,19 @@ function Entrega({ e, alumno, onCambio }) {
 
   async function guardar() {
     setGuardando(true)
-    const { error } = await supabase
+    setMsg(null)
+    const { data, error } = await supabase
       .from('entregas')
       .update({ correccion: texto.trim(), corregido_en: new Date().toISOString() })
       .eq('id', e.id)
+      .select('id')
     setGuardando(false)
-    setMsg(error ? 'No se pudo guardar la corrección.' : 'Corrección guardada.')
-    if (!error) onCambio()
+    if (error || !data || data.length === 0) {
+      setMsg('No se pudo guardar. Revisa que tu cuenta sea administradora.')
+      return
+    }
+    setMsg('Corrección guardada.')
+    onCambio()
   }
 
   async function borrarVideo() {

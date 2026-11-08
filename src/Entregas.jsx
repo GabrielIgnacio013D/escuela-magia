@@ -15,6 +15,7 @@ export default function Entregas({ curso }) {
   const [comentario, setComentario] = useState('')
   const [estado, setEstado] = useState('inactivo')
   const [error, setError] = useState(null)
+  const [errorCarga, setErrorCarga] = useState(false)
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => setUid(data.user?.id ?? null))
@@ -22,17 +23,32 @@ export default function Entregas({ curso }) {
 
   async function cargar() {
     if (!uid) return
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('entregas')
       .select('id, comentario, correccion, corregido_en, creado, video_borrado')
       .eq('user_id', uid)
       .eq('curso', curso.id)
       .order('creado', { ascending: false })
+    if (error) {
+      setErrorCarga(true)
+      return
+    }
+    setErrorCarga(false)
     setLista(data || [])
   }
 
   useEffect(() => {
+    if (!uid) return
     cargar()
+    const cada30s = setInterval(cargar, 30000)
+    const alVolver = () => {
+      if (document.visibilityState === 'visible') cargar()
+    }
+    document.addEventListener('visibilitychange', alVolver)
+    return () => {
+      clearInterval(cada30s)
+      document.removeEventListener('visibilitychange', alVolver)
+    }
   }, [uid])
 
   function abrir() {
@@ -101,12 +117,26 @@ export default function Entregas({ curso }) {
 
   return (
     <div className="mt-6 border-t border-line pt-5">
-      <button
-        onClick={abrir}
-        className="rounded-full border border-accent px-6 py-2 text-sm font-semibold text-accent transition hover:bg-brand-soft"
-      >
-        📹 Subir video de práctica
-      </button>
+      <div className="flex flex-wrap items-center gap-3">
+        <button
+          onClick={abrir}
+          className="rounded-full border border-accent px-6 py-2 text-sm font-semibold text-accent transition hover:bg-brand-soft"
+        >
+          📹 Subir video de práctica
+        </button>
+        <button
+          onClick={cargar}
+          className="text-sm text-muted underline hover:text-ink"
+        >
+          Actualizar
+        </button>
+      </div>
+
+      {errorCarga && (
+        <p className="mt-3 text-sm text-red-500">
+          No pudimos cargar tus envíos. Recarga la página.
+        </p>
+      )}
 
       {lista.length > 0 && (
         <ul className="mt-5 space-y-3">
