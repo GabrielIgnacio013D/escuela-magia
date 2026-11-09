@@ -8,6 +8,7 @@ import VideoModal from './VideoModal'
 import Admin from './Admin'
 import AdminEntregas from './AdminEntregas'
 import AdminNotas from './AdminNotas'
+import AdminLecciones from './AdminLecciones'
 import { QuienesSomos, Faq } from './Secciones'
 import { NOMBRE, WA_GABO, WA_XINO, wa, CURSOS } from './datos'
 
@@ -91,6 +92,9 @@ function Navbar({
       activa ? 'bg-accent text-on-accent' : 'text-muted hover:bg-brand-soft hover:text-ink'
     }`
 
+  const tabAdmin =
+    'shrink-0 rounded-full border border-accent px-4 py-2 text-sm font-semibold text-accent transition hover:bg-brand-soft'
+
   return (
     <nav className="fixed inset-x-0 top-0 z-50 border-b border-line bg-bg/80 backdrop-blur">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-5 pb-2 pt-3">
@@ -98,20 +102,6 @@ function Navbar({
           ✦ {NOMBRE}
         </a>
         <div className="flex items-center gap-3 sm:gap-4">
-          {esAdmin && (
-            <div className="flex gap-3 text-xs font-semibold text-accent sm:text-sm">
-              <a href="#entregas" className="flex items-center hover:underline">
-                Videos
-                {pendientes > 0 && (
-                  <span className="ml-1 rounded-full bg-red-500 px-1.5 py-0.5 text-[10px] font-bold leading-none text-white">
-                    {pendientes}
-                  </span>
-                )}
-              </a>
-              <a href="#notas" className="hover:underline">Notas</a>
-              <a href="#admin" className="hover:underline">Alumnos</a>
-            </div>
-          )}
           {usuario ? (
             <>
               <span className="hidden text-sm text-muted sm:inline">Hola, {nombre}</span>
@@ -158,6 +148,27 @@ function Navbar({
         <a href="#contacto" className={tab(false)}>
           Contacto
         </a>
+        {esAdmin && (
+          <>
+            <a href="#entregas" className={`${tabAdmin} flex items-center`}>
+              ⚙ Videos
+              {pendientes > 0 && (
+                <span className="ml-2 rounded-full bg-red-500 px-1.5 py-0.5 text-[10px] font-bold leading-none text-white">
+                  {pendientes}
+                </span>
+              )}
+            </a>
+            <a href="#clases" className={tabAdmin}>
+              ⚙ Clases
+            </a>
+            <a href="#notas" className={tabAdmin}>
+              ⚙ Notas
+            </a>
+            <a href="#admin" className={tabAdmin}>
+              ⚙ Alumnos
+            </a>
+          </>
+        )}
       </div>
     </nav>
   )
@@ -419,6 +430,7 @@ export default function App() {
           {esAdmin && (
             <>
               <AdminEntregas />
+              <AdminLecciones />
               <AdminNotas />
               <Admin />
             </>
