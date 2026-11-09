@@ -1,4 +1,4 @@
-export const NOMBRE = 'Magia Club'
+export const NOMBRE = 'RG MAGIC'
 export const WA_GABO = '56940533981'
 export const WA_XINO = '56975457092'
 
